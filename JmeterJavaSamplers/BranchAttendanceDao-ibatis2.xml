@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" 
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="com.cmrh.attendance.attendanceForPC.dao.BranchAttendanceDao">
+	<sql id="getHostoryNotLeave-SQL">
+		SELECT DISTINCT EMP_NO empNo,TO_CHAR(HIRE_DATE,'YYYY-MM-DD') hireDate,EMP_NAME empName,DEPT_NO deptNo,
+		BRANCH_CODE branchCode,RANK_CODE rankCode
+		FROM
+		MARKET_STAFF_INFO_TMP
+	</sql>
+	<sql id="getHostoryNotLeaveCount-SQL">
+		SELECT COUNT(DISTINCT EMP_NO)
+		FROM
+		MARKET_STAFF_INFO_TMP
+	</sql>
+	<sql id="getHostoryNotLeave-where-beginMonth">
+		<dynamic prepend="WHERE"> 
+			<isNotEmpty prepend="AND" property="branchCode">
+		    	BRANCH_CODE IN ( select bi.branch_code
+	               from branch_info bi
+	              start with bi.branch_code = #branchCode#
+	             connect by prior bi.branch_code = bi.parent_branch
+		    	)
+			</isNotEmpty>
+			<isEqual property="rankCode" compareValue="1" prepend="AND">
+		    	RANK_CODE IN ('0100','0101','0102')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="2" prepend="AND">
+		    	RANK_CODE IN ('0201','0202')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="3" prepend="AND">
+		    	RANK_CODE IN ('0301','0302')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="4" prepend="AND">
+		    	RANK_CODE IN ('0401','0402')
+			</isEqual>
+			<isNotEmpty prepend="AND" property="isValid">
+		    	IS_VALID = #isValid#
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="startDate">
+				<![CDATA[
+				 HIRE_DATE < to_date(#startDate#, 'yyyy-MM-dd')
+				]]>
+			</isNotEmpty>
+			and calc_type = '1'
+		</dynamic>
+	</sql>
+	<sql id="getHostoryNotLeave-where-currentMonth">
+		<dynamic prepend="WHERE">
+			<isNotEmpty prepend="AND" property="branchCode">
+				BRANCH_CODE IN ( select bi.branch_code
+				from branch_info bi
+				start with bi.branch_code = #branchCode#
+				connect by prior bi.branch_code = bi.parent_branch
+				)
+			</isNotEmpty>
+			<isEqual property="rankCode" compareValue="1" prepend="AND">
+				RANK_CODE IN ('0100','0101','0102')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="2" prepend="AND">
+				RANK_CODE IN ('0201','0202')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="3" prepend="AND">
+				RANK_CODE IN ('0301','0302')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="4" prepend="AND">
+				RANK_CODE IN ('0401','0402')
+			</isEqual>
+			<isNotEmpty prepend="AND" property="isValid">
+				IS_VALID = #isValid#
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="startDate">
+				<![CDATA[
+				 HIRE_DATE >= to_date(#startDate#, 'YYYY-MM-DD')
+				]]>
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="endDate">
+				<![CDATA[
+				 HIRE_DATE <= to_date(#endDate#, 'YYYY-MM-DD')
+				]]>
+			</isNotEmpty>
+			and calc_type = '1'
+		</dynamic>
+	</sql>
+	<!--获取月初在职人数-->
+	<select id="getHostoryNotLeaveBeginMonthCount" parameterClass="java.util.Map" resultClass="java.lang.Integer">
+		<include refid="getHostoryNotLeaveCount-SQL"/>
+		<include refid="getHostoryNotLeave-where-beginMonth"/>
+	</select>
+	<!--获取历史中当月新增人数-->
+	<select id="getHostoryCurentMonthAddPerson" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.BranchDto">
+		<include refid="getHostoryNotLeave-SQL"/>
+		<include refid="getHostoryNotLeave-where-currentMonth"/>
+	</select>
+
+	<sql id="getCurrentNotLeave-SQL">
+		SELECT STAFF.EMP_NO AS empNo,to_char(HIRE_DATE,'YYYY-MM-DD') AS hireDate,DEPT.BRANCH_CODE AS branchCode FROM STAFF_INFO STAFF
+		JOIN DEPT_INFO DEPT ON  STAFF.DEPT_NO = DEPT.DEPT_NO
+	</sql>
+	<sql id="getCurrentNotLeave-where">
+		<dynamic prepend="WHERE"> 
+			<isNotEmpty prepend="AND" property="branchCode">
+		    	DEPT.BRANCH_CODE IN ( select bi.branch_code
+	               from branch_info bi
+	              start with bi.branch_code = #branchCode#
+	             connect by prior bi.branch_code = bi.parent_branch
+		    	)
+			</isNotEmpty>
+			<isEqual property="rankCode" compareValue="1" prepend="AND">
+		    	STAFF.RANK IN ('0100','0101','0102')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="2" prepend="AND">
+		    	STAFF.RANK IN ('0201','0202')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="3" prepend="AND">
+		    	STAFF.RANK IN ('0301','0302')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="4" prepend="AND">
+		    	STAFF.RANK IN ('0401','0402')
+			</isEqual>
+			<isNotEmpty prepend="AND" property="isValid">
+		    	STAFF.IS_VALID = #isValid#
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="startDate">
+				<![CDATA[
+				 HIRE_DATE >= to_date(#startDate#, 'YYYY-MM-DD')
+				]]>
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="endDate">
+				<![CDATA[
+				 HIRE_DATE <= to_date(#endDate#, 'YYYY-MM-DD')
+				]]>
+			</isNotEmpty>
+			AND STAFF.EMP_STATUS_CODE = '0101'
+		</dynamic>
+	</sql>
+	<select id="getCurrentBeginMonthPersons" resultClass="java.lang.Integer" parameterClass="java.util.Map">
+		SELECT COUNT(DISTINCT STAFF.EMP_NO)  FROM STAFF_INFO STAFF INNER JOIN DEPT_INFO DEPT ON  STAFF.DEPT_NO = DEPT.DEPT_NO
+			WHERE STAFF.EMP_STATUS_CODE = '0101'
+			<isNotEmpty prepend="AND" property="branchCode">
+				BRANCH_CODE IN ( SELECT BI.BRANCH_CODE
+				FROM BRANCH_INFO BI
+				START WITH BI.BRANCH_CODE = #branchCode#
+				CONNECT BY PRIOR BI.BRANCH_CODE = BI.PARENT_BRANCH
+				)
+			</isNotEmpty>
+			<isEqual property="rankCode" compareValue="1" prepend="AND">
+				STAFF.RANK IN ('0100','0101','0102')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="2" prepend="AND">
+				STAFF.RANK IN ('0201','0202')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="3" prepend="AND">
+				STAFF.RANK IN ('0301','0302')
+			</isEqual>
+			<isEqual property="rankCode" compareValue="4" prepend="AND">
+				STAFF.RANK IN ('0401','0402')
+			</isEqual>
+			<isNotEmpty prepend="AND" property="isValid">
+				STAFF.IS_VALID = #isValid#
+			</isNotEmpty>
+			<isNotEmpty prepend="AND" property="startDate">
+				<![CDATA[
+				 STAFF.HIRE_DATE < to_date(#startDate#, 'YYYY-MM-DD')
+				]]>
+			</isNotEmpty>
+	</select>
+	<!--获取当月新增人数-->
+	<select id="getCurrentMonthAddPerson" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.BranchDto">
+		<include refid="getCurrentNotLeave-SQL"/>
+		<include refid="getCurrentNotLeave-where"/>
+	</select>
+	<sql id="getHostoryWorkAttendance-SQL">
+		SELECT COUNT(AGCR.EMP_NO)
+		FROM MARKET_STAFF_INFO_TMP MST INNER JOIN
+			AGENT_CHECK_RECORD AGCR ON MST.EMP_NO = AGCR.EMP_NO
+		WHERE AGCR.FIRST_CHECKTIME IS NOT NULL
+		AND  AGCR.CHECK_CAUSE IS NULL 
+	</sql>
+	<sql id="getHostoryWorkAttendance-where">
+		<isNotEmpty prepend="AND" property="branchCode">
+	    	MST.BRANCH_CODE IN ( select bi.branch_code
+	               from branch_info bi
+	              start with bi.branch_code = #branchCode#
+	             connect by prior bi.branch_code = bi.parent_branch
+		    	)
+		</isNotEmpty>
+		<isEqual property="rankCode" compareValue="1" prepend="AND">
+	    	MST.RANK_CODE IN ('0100','0101','0102')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="2" prepend="AND">
+	    	MST.RANK_CODE IN ('0201','0202')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="3" prepend="AND">
+	    	MST.RANK_CODE IN ('0301','0302')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="4" prepend="AND">
+	    	MST.RANK_CODE IN ('0401','0402')
+		</isEqual>
+		<isNotEmpty prepend="AND" property="isValid">
+	    	MST.IS_VALID = #isValid#
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="queryDate">
+			<![CDATA[
+	    	AGCR.CHECK_DAY >= TO_DATE(#queryDate#,'yyyy-MM')
+	    	]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="queryDate">
+			<![CDATA[
+	    	AGCR.CHECK_DAY <= ADD_MONTHS(to_date(#queryDate#,'yyyy-MM'),1)
+	    	]]>
+		</isNotEmpty>
+		and MST.calc_type = '1'
+        and MST.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+	</sql>
+	<select id="getHostoryWorkAttendanceCount" resultClass="java.lang.Integer" parameterClass="java.util.Map" >
+		<include refid="getHostoryWorkAttendance-SQL"/>
+		<include refid="getHostoryWorkAttendance-where"/>
+	</select>
+	<sql id="getCurrentWorkAttendance-SQL">
+		SELECT AGCR.EMP_NO empNo FROM STAFF_INFO STAFF JOIN DEPT_INFO DEPT 
+		ON  STAFF.DEPT_NO = DEPT.DEPT_NO join AGENT_CHECK_RECORD  AGCR 
+		on DEPT.DEPT_NO = AGCR.DEPT_NO
+		WHERE AGCR.FIRST_CHECKTIME IS NOT NULL
+		AND  AGCR.CHECK_CAUSE IS NULL AND STAFF.EMP_STATUS_CODE = '0101'
+	</sql>
+	<sql id="getCurrentWorkAttendance-where">
+		<isNotEmpty prepend="AND" property="branchCode">
+	    	DEPT.BRANCH_CODE IN ( select bi.branch_code
+	               from branch_info bi
+	              start with bi.branch_code = #branchCode#
+	             connect by prior bi.branch_code = bi.parent_branch
+		    	)
+		</isNotEmpty>
+		<isEqual property="rankCode" compareValue="1" prepend="AND">
+	    	STAFF.RANK IN ('0100','0101','0102')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="2" prepend="AND">
+	    	STAFF.RANK IN ('0201','0202')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="3" prepend="AND">
+	    	STAFF.RANK IN ('0301','0302')
+		</isEqual>
+		<isEqual property="rankCode" compareValue="4" prepend="AND">
+	    	STAFF.RANK IN ('0401','0402')
+		</isEqual>
+		<isNotEmpty prepend="AND" property="isValid">
+	    	STAFF.IS_VALID = #isValid#
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="queryDate">
+			<![CDATA[
+	    	AGCR.CHECK_DAY >= TO_DATE(#queryDate#,'YYYY-MM')
+	    	]]>
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="queryDate">
+			<![CDATA[
+	    	AGCR.CHECK_DAY <= ADD_MONTHS(TO_DATE(#queryDate#,'YYYY-MM'),1)
+	    	]]>
+		</isNotEmpty>
+	</sql>
+	<select id="getCurrentWorkAttendanceCount" parameterClass="java.util.Map" resultClass="java.lang.Integer">
+		<include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+		<include refid="getCurrentWorkAttendance-SQL"/>
+		<include refid="getCurrentWorkAttendance-where"/>
+		<include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+	</select>
+	<select id="getCurentUserBelowBranch" parameterClass="java.lang.String" resultClass="com.cmrh.basicmanger.common.domain.BranchInfoDomain">
+		SELECT DISTINCT C.BRANCH_CODE branchCode
+		FROM BRANCH_INFO C 
+		start with C.PARENT_BRANCH  IN (
+       	SELECT DISTINCT A.BRANCH_CODE
+         FROM PUB_USER_BRANCH_OPER_PRIVS A,BRANCH_INFO B
+         WHERE A.BRANCH_CODE = B.BRANCH_CODE
+         AND B.IS_VALID = 'Y'
+         AND A.IS_VALID = 'Y'
+         AND A.VALID_FLAG = 'Y'
+         AND A.OPERATION_TYPE = 'SALES_BASIC_ADMIN'
+         AND A.UM_USER_ID = #userId#
+		)connect by prior C.BRANCH_CODE=C.PARENT_BRANCH
+	</select>
+	
+</sqlMap>

@@ -1,0 +1,524 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE sqlMap PUBLIC "-//ibatis.apache.org//DTD SQL Map 2.0//EN" 
+    "http://ibatis.apache.org/dtd/sql-map-2.dtd">
+<sqlMap namespace="com.cmrh.attendance.attendanceForPC.dao.TeamAttendanceInfoDao">
+	
+	<sql id="getQuListHistory-SQL" >      
+       <![CDATA[
+       select dept_no deptNo,
+	       (select de.dept_full_name
+	          from dept_info de
+	         where de.dept_no = t.dept_no) deptName,	         
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = t.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = t.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	           AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+	           t.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = t.branch_code) branchName 
+	  from market_staff_info_tmp t
+	 where t.post_code = '04'
+	   and t.branch_code in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and t.calc_type = '1'
+	   and t.is_valid = 'Y'
+	   and t.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+	]]>
+	</sql>
+	
+	<select id="getQuListHistory" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getQuListHistory-SQL" />
+    </select>
+	
+	<select id="getQuListHistoryPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getQuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getQuListHistoryCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getQuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+	
+	<sql id="getQuListCurrent-SQL">      
+       <![CDATA[
+       select di.dept_no deptNo,
+	       di.dept_full_name deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = di.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = di.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	           AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+	        di.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = di.branch_code) branchName
+	  from dept_info di
+	 where di.dept_level = '01'
+	   and di.dept_type = '01'
+	   and di.is_valid = 'Y'
+	   and di.dept_status = '1'
+	   and di.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and di.channel_type = '01'
+	   and di.dept_close_date is null
+	]]>
+	</sql>
+	
+	<select id="getQuListCurrent" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getQuListCurrent-SQL" />
+    </select>
+	
+	<select id="getQuListCurrentPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getQuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getQuListCurrentCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getQuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+	
+	<sql id="getBuListHistory-SQL">      
+       <![CDATA[
+       select dept_no deptNo,
+	       (select de.dept_full_name
+	          from dept_info de
+	         where de.dept_no = t.dept_no) deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = t.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = t.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	            AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+	        t.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = t.branch_code) branchName
+	  from market_staff_info_tmp t
+	 where t.post_code = '03'
+	   and t.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and t.calc_type = '1'
+	   and t.is_valid = 'Y'
+	   and t.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+	   and t.Q_DEPT_NO = #qCode#
+	]]>
+	</sql>
+	
+	<select id="getBuListHistory" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getBuListHistory-SQL" />
+    </select>
+    
+	<select id="getBuListHistoryPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getBuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getBuListHistoryCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getBuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+	
+	<sql id="getBuListCurrent-SQL" >      
+       <![CDATA[
+       select di.dept_no deptNo,
+	       di.dept_full_name deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = di.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = di.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	           AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+	        di.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = di.branch_code) branchName
+	  from dept_info di
+	 where di.dept_level = '02'
+	   and di.dept_type = '01'
+	   and di.is_valid = 'Y'
+	   and di.dept_status = '1'
+	   and di.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and di.channel_type = '01'
+	   and di.dept_close_date is null
+	   and di.PARENT_DEPT= #qCode#
+	]]>
+	</sql>
+	
+	<select id="getBuListCurrent" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getBuListCurrent-SQL" />
+    </select>
+    
+	<select id="getBuListCurrentPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getBuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getBuListCurrentCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getBuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+	
+	<sql id="getZuListHistory-SQL" >      
+       <![CDATA[
+       select dept_no deptNo,
+	       (select de.dept_full_name
+	          from dept_info de
+	         where de.dept_no = t.dept_no) deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = t.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = t.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	            AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+	        t.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = t.branch_code) branchName
+	  from market_staff_info_tmp t
+	 where t.post_code = '02'
+	   and t.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and t.calc_type = '1'
+	   and t.is_valid = 'Y'
+	   and t.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+	   and t.B_DEPT_NO = #bCode#
+	]]>
+	</sql>
+	
+	<select id="getZuListHistory" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getZuListHistory-SQL" />
+    </select>
+    
+	<select id="getZuListHistoryPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getZuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getZuListHistoryCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getZuListHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+	
+	<sql id="getZuListCurrent-SQL">      
+       <![CDATA[
+      select di.dept_no deptNo,
+	       di.dept_full_name deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = di.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = di.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	             AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD'))as incumbency,
+	        di.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = di.branch_code) branchName
+	  from dept_info di
+	 where di.dept_level = '03'
+	   and di.dept_type = '01'
+	   and di.is_valid = 'Y'
+	   and di.dept_status = '1'
+	   and di.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and di.channel_type = '01'
+	   and di.dept_close_date is null
+	   and di.PARENT_DEPT = #bCode#
+	]]>
+	</sql>
+	
+	<select id="getZuListCurrent" parameterClass="java.util.Map" resultClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+	     <include refid="getZuListCurrent-SQL" />
+    </select>
+	
+	<select id="getZuListCurrentPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getZuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getZuListCurrentCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getZuListCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+    <sql id="getZuInfoHistory-SQL" >      
+       <![CDATA[
+       select dept_no deptNo,
+	       (select de.dept_full_name
+	          from dept_info de
+	         where de.dept_no = t.dept_no) deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = t.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = t.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	             AND si.HIRE_DATE< to_date(#startDate#,'YYYY-MM-DD')) as incumbency,
+            t.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = t.branch_code) branchName
+	  from market_staff_info_tmp t
+	 where t.post_code = '02'
+	   and t.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and t.calc_type = '1'
+	   and t.is_valid = 'Y'
+	   and t.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+	   and t.Z_DEPT_NO = #zCode#
+	]]>
+	</sql>
+    
+	<select id="getZuInfoHistoryPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getZuInfoHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getZuInfoHistoryCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getZuInfoHistory-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+    <select id="getZuInfoHistory" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+	     <include refid="getZuInfoHistory-SQL" />
+    </select>
+    
+    <sql id="getZuInfoCurrent-SQL">      
+       <![CDATA[
+      select di.dept_no deptNo,
+	       di.dept_full_name deptName,
+	       (select si.emp_name
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = di.dept_no and dc.DEPT_CHARGE_EMP_NO = si.emp_no) chargeName,
+	       (select count(DISTINCT EMP_NO)
+	          from staff_info si
+	         where si.dept_no = di.dept_no
+	           and si.EMP_STATUS_CODE = '0101'
+	           and si.is_valid = 'Y'
+	             AND si.HIRE_DATE < to_date(#startDate#,'YYYY-MM-DD'))as incumbency,
+           di.branch_code branchCode,
+	        (select br.BRANCH_NAME
+	          from branch_info br
+	         where br.branch_code = di.branch_code) branchName
+	  from dept_info di
+	 where di.dept_level = '03'
+	   and di.dept_type = '01'
+	   and di.is_valid = 'Y'
+	   and di.dept_status = '1'
+	    and di.branch_code  in (                         
+             select bi.branch_code
+               from branch_info bi
+              start with bi.branch_code = #branchCode#
+             connect by prior bi.branch_code = bi.parent_branch                         
+             )
+	   and di.channel_type = '01'
+	   and di.dept_close_date is null
+	   and di.DEPT_NO = #zCode#
+	]]>
+	</sql>
+    
+    <select id="getZuInfoCurrentPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getZuInfoCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getZuInfoCurrentCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getZuInfoCurrent-SQL" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+     <select id="getZuInfoCurrent" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AttendQueryDTO" resultClass="java.util.HashMap"> 
+	     <include refid="getZuInfoCurrent-SQL" />
+    </select>
+
+    
+    <sql id="getTeamInfoHistory" >      
+       <![CDATA[
+		select msit.emp_no agentCode,
+		       msit.emp_name agentName,
+		       msit.rank_code agentLevel,
+		       (select r.description
+		          from PUBDATA.rank r
+		         where r.rank_code = msit.rank_code) agentLevelDes
+		  from MARKET_STAFF_INFO_TMP msit
+		 where decode(#deptLevel#,'03',msit.z_dept_no, '02', msit.b_dept_no, '01', msit.q_dept_no) = #teamCode#
+		   and msit.post_code = decode(#deptLevel#,'03','01', '02', '02', '01', '03')  
+		   and msit.calc_ym = trunc(to_date(#queryDate#, 'yyyy-MM'), 'MM')
+		   and msit.calc_type = '1'
+		   and msit.is_valid = 'Y'
+	]]>
+	</sql>
+	
+	<sql id="getTeamInfoCurrent" >      
+       <![CDATA[
+		select si.emp_no agentCode,
+		       si.emp_name agentName,
+		       si.RANK agentLevel,
+		       (select r.description
+		          from PUBDATA.rank r
+		         where r.rank_code = si.RANK) agentLevelDes
+		  from staff_info si, dept_info di
+		 where si.DEPT_NO = di.dept_no
+		   and di.channel_type = '01'
+		   and di.dept_no = #teamCode#
+	]]>
+	</sql>
+	
+	<select id="getTeamInfoHistoryPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getTeamInfoHistory" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getTeamInfoHistoryCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getTeamInfoHistory" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+    <select id="getTeamInfoCurrentPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendDTO" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getTeamInfoCurrent" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getTeamInfoCurrentCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendDTO"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getTeamInfoCurrent" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+    
+    <sql id="getAgentAttendanceInfo">   
+        SELECT
+			RECORD_ID recordId,
+		    EMP_NO empNo,
+		    EMP_NAME userName,
+			TO_CHAR(CHECK_DAY, 'YYYY-MM-DD') checkDay,
+		    TO_CHAR(FIRST_CHECKTIME, 'YYYY-MM-DD HH24:MI:SS') firstCheckTime,
+		    TO_CHAR(LAST_CHECKTIME, 'YYYY-MM-DD HH24:MI:SS') lastCheckTime,  
+			DECODE(CHECK_STATUS , '01', '正常','02', '异常','03', '已处理') checkStatus,
+			CHECK_CAUSE checkCause,
+			FIRST_CHECKSTATUS firstCheckStatus,
+			LAST_CHECKSTATUS lastCheckStatus
+		FROM MSPDATA.AGENT_CHECK_RECORD
+		WHERE
+			check_cause is null
+		<isNotEmpty prepend="AND" property="agentCode">
+		    EMP_NO = #agentCode#
+		</isNotEmpty>
+		<isNotEmpty prepend="AND" property="queryDate">
+		    <![CDATA[
+			CHECK_DAY >= TO_DATE(#queryDate#,'yyyy-MM')
+			AND CHECK_DAY <= add_months( TO_DATE(#queryDate#,'yyyy-MM') ,1)
+			]]>
+		</isNotEmpty>
+		ORDER BY CHECK_DAY
+	</sql>
+	
+	<select id="getAgentAttendanceInfoPage" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendInfo" resultClass="java.util.HashMap"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pagePrefix" />
+	     <include refid="getAgentAttendanceInfo" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.pageSuffix" />
+    </select>
+	
+	<select id="getAgentAttendanceInfoCount" resultClass="int"  parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendInfo"> 
+		 <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countPrefix" />
+	     <include refid="getAgentAttendanceInfo" />
+         <include refid="com.cmrh.mspserver.equip.dao.CommonDao.countSuffix" />
+    </select>
+    
+    <select id="getAgentAttendanceInfoExport" parameterClass="com.cmrh.attendance.attendanceForPC.dto.AgentAttendInfo" resultClass="java.util.HashMap"> 
+	     <include refid="getAgentAttendanceInfo" />
+    </select>
+    
+    
+    <select id="getLeaveApplyDays" resultClass="java.lang.String"  parameterClass="java.util.HashMap"> 
+    	SELECT to_char(NVL(SUM(APPLY_DAYS),0)) FROM MSPDATA.AGENT_LEAVE_APPLY_INFO t
+    	  WHERE AGENT_CODE = #agentCode# AND APPROVAL_RESULT ='0' AND APPROVAL_STATUS ='0'
+    	  <isNotEmpty prepend="AND" property="queryDate">
+		    <![CDATA[
+			APPLY_BEGIN_DATE >= TO_DATE(#queryDate#,'yyyy-MM')
+			AND APPLY_END_DATE <= add_months( TO_DATE(#queryDate#,'yyyy-MM') ,1)
+			]]>
+		</isNotEmpty>
+    </select>
+    
+    
+    <select id="getChargeName" resultClass="java.lang.String"  parameterClass="java.lang.String"> 
+    	select si.emp_name chargeName
+            from DEPT_CHARGE dc,staff_info si
+           where dc.dept_no = #teamCode# and dc.DEPT_CHARGE_EMP_NO = si.emp_no
+    </select>
+		
+</sqlMap>
